@@ -1,5 +1,8 @@
 ﻿using System;
-using System.Reactive;
+using System.Net.Sockets;
+using System.Reactive
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.ComponentModel;
 using System.Threading;
@@ -15,25 +18,33 @@ namespace SmoothMouse
         private event EventHandler<Timestamped<Point>> pointEvent;
 
         private BackgroundWorker pollWorker;
-
-        private EmaFilter _xFilter = new EmaFilter();
-        private EmaFilter _yFilter = new EmaFilter();
-        private double _alpha = 0.1;
+        private TcpClient tcpClient;
+        private NetworkStream networkStream;
 
         #endregion
 
         #region Ctor
+
+        private const string ServerIp = "127.0.0.1"; // Replace with your server IP
+        private const int ServerPort = 12345; // Replace with your server port
 
         public MouseInput()
         {
             pollWorker = new BackgroundWorker();
             pollWorker.DoWork += pollMouse;
             pollWorker.WorkerSupportsCancellation = true;
+
+            // Initialize TCP client and connect to the server
+            tcpClient = new TcpClient();
+            tcpClient.Connect(ServerIp, ServerPort);
+            networkStream = tcpClient.GetStream();
         }
 
         public void Dispose()
         {
             pollWorker.CancelAsync();
+            networkStream.Close();
+            tcpClient.Close();
             pollWorker.Dispose();
         }
 
@@ -78,7 +89,7 @@ namespace SmoothMouse
 
         #endregion
 
-        #region Private methods        
+        #region Private methods
 
         private void pollMouse(object sender, DoWorkEventArgs e)
         {
@@ -86,22 +97,36 @@ namespace SmoothMouse
             {
                 lock (this)
                 {
-                    // Get latest mouse position
-                    var timeStamp = Time.HighResolutionUtcNow.ToUniversalTime();
 
-                    // Gets the absolute mouse position, relative to screen
-                    POINT cursorPos;
-                    GetCursorPos(out cursorPos);
+                    try{
+                        // Get latest mouse position from the socket
+                        var timeStamp = Time.HighResolutionUtcNow.ToUniversalTime();
 
-                    // Apply smoothing
-                    _alpha = 0.1;
-                    double x = _xFilter.Filter(cursorPos.X, _alpha);
-                    double y = _yFilter.Filter(cursorPos.Y, _alpha);
+                        // Read JSON data from the socket
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = networkStream.Read(buffer, 0, buffer.Length);
+                        string jsonData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                    // Emit a point event
-                    pointEvent(this, new Timestamped<Point>(
-                        new Point((int)x, (int)y),
-                        timeStamp));
+                        // Parse JSON data
+                        var mousePosition = JsonSerializer.Deserialize<MousePosition>(jsonData);
+
+                        // Gets the absolute mouse position, relative to screen
+                        POINT cursorPos;
+                        GetCursorPos(out cursorPos);
+
+                        // Apply smoothing
+                        double x = cursorPos.X;
+                        double y = cursorPos.Y;
+
+                        // Emit a point event
+                        pointEvent(this, new Timestamped<Point>(
+                            new Point((int)x, (int)y),
+                            timeStamp));
+                    }
+                    catch (Exception ex)
+                    {
+                        PublishError(this, ex);
+                    }
 
                     // Sleep thread to avoid hot loop
                     int delay = 30; // ms
