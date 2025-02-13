@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
-using System.Reactive
+using System.Reactive;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -12,6 +12,15 @@ using System.Runtime.InteropServices;
 
 namespace SmoothMouse
 {
+    public class MousePosition
+    {
+        public double x { get; set; }
+        public double y { get; set; }
+        public bool blink { get; set; }
+        public bool fixation { get; set; }
+    }
+
+
     public class MouseInput : IPointService, IDisposable
     {
         #region Fields
@@ -34,10 +43,16 @@ namespace SmoothMouse
             pollWorker.DoWork += pollMouse;
             pollWorker.WorkerSupportsCancellation = true;
 
-            // Initialize TCP client and connect to the server
-            tcpClient = new TcpClient();
-            tcpClient.Connect(ServerIp, ServerPort);
-            networkStream = tcpClient.GetStream();
+            try
+            {
+                tcpClient = new TcpClient();
+                tcpClient.Connect(ServerIp, ServerPort);
+                networkStream = tcpClient.GetStream();
+            }
+            catch (Exception ex)
+            {
+                PublishError(this, ex);
+            }
         }
 
         public void Dispose()
@@ -47,10 +62,6 @@ namespace SmoothMouse
             tcpClient.Close();
             pollWorker.Dispose();
         }
-
-        [DllImport("user32.dll")]
-        public static extern bool GetCursorPos(out POINT lpPoint);
-
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
@@ -80,7 +91,7 @@ namespace SmoothMouse
             {
                 pointEvent -= value;
 
-                if (pointEvent == null)
+                if (pointEvent?.GetInvocationList().Length == 0)
                 {
                     pollWorker.CancelAsync();
                 }
@@ -111,17 +122,12 @@ namespace SmoothMouse
                         var mousePosition = JsonSerializer.Deserialize<MousePosition>(jsonData);
 
                         // Gets the absolute mouse position, relative to screen
-                        POINT cursorPos;
-                        GetCursorPos(out cursorPos);
-
-                        // Apply smoothing
-                        double x = cursorPos.X;
-                        double y = cursorPos.Y;
+                        double x = mousePosition.x;
+                        double y = mousePosition.y;
 
                         // Emit a point event
-                        pointEvent(this, new Timestamped<Point>(
-                            new Point((int)x, (int)y),
-                            timeStamp));
+                        pointEvent?.Invoke(this, new Timestamped<Point>(new Point((int)x, (int)y), timeStamp));
+
                     }
                     catch (Exception ex)
                     {
