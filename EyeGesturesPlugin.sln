@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1259
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmoothMouse", "SmoothMouse.csproj", "{53B53968-536D-47E8-9E91-7E05BE3BCCC0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EyeGesturesPlugin", "EyeGesturesPlugin.csproj", "{53B53968-536D-47E8-9E91-7E05BE3BCCC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

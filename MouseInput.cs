@@ -12,7 +12,7 @@ using JuliusSweetland.OptiKey.Contracts;
 using JuliusSweetland.OptiKey.Static;
 using System.Runtime.InteropServices;
 
-namespace SmoothMouse
+namespace EyeGestures
 {
     public class MousePosition
     {
@@ -23,7 +23,7 @@ namespace SmoothMouse
     }
 
 
-    public class MouseInput : IPointService, IDisposable
+    public class EyeGesturesInput : IPointService, IDisposable
     {
         #region Fields
         private event EventHandler<Timestamped<Point>> pointEvent;
@@ -37,16 +37,17 @@ namespace SmoothMouse
         #region Ctor
 
         private const string ServerIp = "127.0.0.1"; // Replace with your server IP
-        private const int ServerPort = 12345; // Replace with your server port
+        private const int ServerPort = 65432; // Replace with your server port
 
-        public MouseInput()
+        public EyeGesturesInput()
         {
-            pollWorker = new BackgroundWorker();
-            pollWorker.DoWork += pollMouse;
-            pollWorker.WorkerSupportsCancellation = true;
 
             try
             {
+                pollWorker = new BackgroundWorker();
+                pollWorker.DoWork += pollMouse;
+                pollWorker.WorkerSupportsCancellation = true;
+
                 tcpClient = new TcpClient();
                 tcpClient.Connect(ServerIp, ServerPort);
                 networkStream = tcpClient.GetStream();
@@ -108,38 +109,35 @@ namespace SmoothMouse
         {
             while (!pollWorker.CancellationPending)
             {
-                lock (this)
-                {
 
-                    try{
-                        // Get latest mouse position from the socket
-                        var timeStamp = Time.HighResolutionUtcNow.ToUniversalTime();
+                try{
+                    // Get latest mouse position from the socket
+                    var timeStamp = Time.HighResolutionUtcNow.ToUniversalTime();
 
-                        // Read JSON data from the socket
-                        byte[] buffer = new byte[1024];
-                        int bytesRead = networkStream.Read(buffer, 0, buffer.Length);
-                        string jsonData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    // Read JSON data from the socket
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = networkStream.Read(buffer, 0, buffer.Length);
+                    string jsonData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                        // Parse JSON data
-                        var mousePosition = JsonSerializer.Deserialize<MousePosition>(jsonData);
+                    // Parse JSON data
+                    var mousePosition = JsonSerializer.Deserialize<MousePosition>(jsonData);
 
-                        // Gets the absolute mouse position, relative to screen
-                        double x = mousePosition.x;
-                        double y = mousePosition.y;
+                    // Gets the absolute mouse position, relative to screen
+                    double x = mousePosition.x;
+                    double y = mousePosition.y;
 
-                        // Emit a point event
-                        pointEvent?.Invoke(this, new Timestamped<Point>(new Point((int)x, (int)y), timeStamp));
+                    // Emit a point event
+                    pointEvent?.Invoke(this, new Timestamped<Point>(new Point((int)x, (int)y), timeStamp));
 
-                    }
-                    catch (Exception ex)
-                    {
-                        PublishError(this, ex);
-                    }
-
-                    // Sleep thread to avoid hot loop
-                    int delay = 30; // ms
-                    Thread.Sleep(delay);
                 }
+                catch (Exception ex)
+                {
+                    PublishError(this, ex);
+                }
+
+                // Sleep thread to avoid hot loop
+                int delay = 30; // ms
+                Thread.Sleep(delay);
             }
         }
         #endregion

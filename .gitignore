@@ -8,3 +8,8 @@ obj/**
 .vs/SmoothMouse/v17/.suo
 .vs/SmoothMouse/v17/DocumentLayout.backup.json
 .vs/SmoothMouse/v17/DocumentLayout.json
+*.vsidx
+.vs/EyeGesturesPlugin/v17/DocumentLayout.json
+.vs/EyeGesturesPlugin/v17/DocumentLayout.backup.json
+.vs/EyeGesturesPlugin/v17/.suo
+.vs/EyeGesturesPlugin.csproj.dtbcache.json

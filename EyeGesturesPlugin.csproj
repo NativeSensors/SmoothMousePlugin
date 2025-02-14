@@ -7,8 +7,8 @@
     <ProjectGuid>{53B53968-536D-47E8-9E91-7E05BE3BCCC0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SmoothMouse</RootNamespace>
-    <AssemblyName>SmoothMouse</AssemblyName>
+    <RootNamespace>EyeGestures</RootNamespace>
+    <AssemblyName>EyeGestures</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
